@@ -1,8 +1,8 @@
 {
   "packages": [
-    "basic-wallet",
-    "local-wallet",
-    "my-plugin"
+    "basic-extension",
+    "local-extension",
+    "packages/*"
   ],
   "npmClient": "yarn",
   "useWorkspaces": true,

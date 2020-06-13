@@ -23,9 +23,13 @@
       "matches": [
         "<all_urls>"
       ],
+      "run_at": "document_start",
       "js": [
         "content-script.bundle.js"
       ]
     }
+  ],
+  "web_accessible_resources": [
+    "injected.bundle.js"
   ]
 }

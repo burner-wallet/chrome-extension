@@ -9,8 +9,9 @@ module.exports = {
   mode,
   devtool: "inline-source-map",
   entry: {
-    "content-script": "./src/content-script.ts",
     background: "./src/background.ts",
+    "content-script": "./src/content-script.ts",
+    injected: "./src/injected.ts",
     wallet: "./src/wallet.tsx"
   },
   output: {

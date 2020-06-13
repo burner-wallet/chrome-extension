@@ -6,10 +6,10 @@ import { LocalSigner } from '@burner-wallet/core/signers';
 import { InfuraGateway, XDaiGateway, } from '@burner-wallet/core/gateways';
 import Exchange, { Uniswap, XDaiBridge } from '@burner-wallet/exchange';
 import ModernUI from '@burner-wallet/modern-ui';
-import { ChromeExtensionPlugin } from '@burner-wallet/chrome-extension';
+import { ChromeExtensionPlugin, ChromeExtensionSigner } from '@burner-wallet/chrome-extension';
 
 const core = new BurnerCore({
-  signers: [new LocalSigner()],
+  signers: [new ChromeExtensionSigner()],
   gateways: [
     new InfuraGateway(process.env.REACT_APP_INFURA_KEY),
     new XDaiGateway(),
@@ -24,7 +24,7 @@ const BurnerWallet = () =>
     title="Basic Wallet"
     core={core}
     plugins={[exchange, new ChromeExtensionPlugin()]}
-    router="hash"
+    router="memory"
   />
 
 

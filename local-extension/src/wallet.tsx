@@ -2,14 +2,13 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import { ERC20Asset, NativeAsset } from '@burner-wallet/assets';
 import BurnerCore from '@burner-wallet/core';
-import { LocalSigner } from '@burner-wallet/core/signers';
 import { HTTPGateway } from '@burner-wallet/core/gateways';
 import ModernUI from '@burner-wallet/modern-ui';
-import { ChromeExtensionPlugin } from '@burner-wallet/chrome-extension';
+import { ChromeExtensionPlugin, ChromeExtensionSigner } from '@burner-wallet/chrome-extension';
 
 const core = new BurnerCore({
   signers: [
-    new LocalSigner({ privateKey: process.env.REACT_APP_PK, saveKey: false }),
+    new ChromeExtensionSigner({ privateKey: process.env.REACT_APP_PK, saveKey: false }),
   ],
   gateways: [
     new HTTPGateway('http://localhost:8545', '5777'),

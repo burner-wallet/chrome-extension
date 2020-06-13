@@ -5,7 +5,7 @@ import BurnerCore from '@burner-wallet/core';
 import { LocalSigner } from '@burner-wallet/core/signers';
 import { HTTPGateway } from '@burner-wallet/core/gateways';
 import ModernUI from '@burner-wallet/modern-ui';
-import MyPlugin from 'my-plugin';
+import { ChromeExtensionPlugin } from '@burner-wallet/chrome-extension';
 
 const core = new BurnerCore({
   signers: [
@@ -35,8 +35,8 @@ const BurnerWallet = () =>
   <ModernUI
     title="Basic Wallet"
     core={core}
-    plugins={[new MyPlugin()]}
-    router="hash"
+    plugins={[new ChromeExtensionPlugin()]}
+    router="memory"
   />
 
 

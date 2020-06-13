@@ -1,9 +1,9 @@
 {
-  "name": "@burner-wallet/chrome-extension-plugin",
+  "name": "@burner-wallet/chrome-extension",
   "version": "0.1.0",
   "license": "MIT",
-  "main": "dist/ChromeExtensionPlugin.js",
-  "types": "dist/ChromeExtensionPlugin.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
     "start-basic": "tsc -w",
@@ -11,11 +11,14 @@
   },
   "dependencies": {
     "@burner-wallet/assets": "^1.0.0",
-    "@burner-wallet/types": "^1.0.0",
-    "@types/chrome": "^0.0.114",
-    "@types/react": "*"
+    "extension-port-stream": "^1.0.0",
+    "post-message-stream": "^3.0.0",
+    "pump": "^3.0.0"
   },
   "devDependencies": {
-    "@types/chrome": "^0.0.114"
+    "@burner-wallet/types": "^1.0.0",
+    "@types/chrome": "^0.0.114",
+    "@types/pump": "^1.1.0",
+    "@types/react": "*"
   }
 }

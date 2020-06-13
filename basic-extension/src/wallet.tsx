@@ -6,7 +6,7 @@ import { LocalSigner } from '@burner-wallet/core/signers';
 import { InfuraGateway, XDaiGateway, } from '@burner-wallet/core/gateways';
 import Exchange, { Uniswap, XDaiBridge } from '@burner-wallet/exchange';
 import ModernUI from '@burner-wallet/modern-ui';
-import ChromeExtensionPlugin from '@burner-wallet/chrome-extension-plugin';
+import { ChromeExtensionPlugin } from '@burner-wallet/chrome-extension';
 
 const core = new BurnerCore({
   signers: [new LocalSigner()],

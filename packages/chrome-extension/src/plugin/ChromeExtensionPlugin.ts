@@ -9,6 +9,14 @@ interface PluginActionContext {
 export default class ChromeExtensionPlugin implements Plugin {
   private pluginContext?: BurnerPluginContext;
 
+  constructor() {
+    chrome.tabs.getCurrent((tab: any) => {
+      if (!tab) {
+        window.document.body.style.width = '360px';
+      }
+    });
+  }
+
   initializePlugin(pluginContext: BurnerPluginContext) {
     this.pluginContext = pluginContext;
 
@@ -33,9 +41,3 @@ export default class ChromeExtensionPlugin implements Plugin {
     return blockNum;
   }
 }
-
-chrome.tabs.getCurrent((tab: any) => {
-  if (!tab) {
-    window.document.body.style.width = '360px';
-  }
-});

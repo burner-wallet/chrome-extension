@@ -14,11 +14,30 @@ export default class ProxyCore {
   constructor() {
     const extensionPort = chrome.runtime.connect({ name: 'wallet' });
     const extensionStream = new PortStream(extensionPort);
+
+    const resolvers: { [id: number]: { resolve: any, reject: any } } = {};
+    let nextId = 0;
+
     extensionStream.on('data', (data: any) => {
       if (data.msg === 'initialize') {
-        this.assets = data.assets.map((assetData: any) => new ProxyAsset(assetData));
+        this.assets = data.assets.map((assetData: any) => {
+          const call = (command: string, ...args: any[]) => {
+            return new Promise((resolve, reject) => {
+              const id = nextId++;
+              resolvers[id] = { resolve, reject };
+              extensionStream.write({ id, msg: 'assetCall', asset: assetData.id, command, args });
+            });
+          };
+
+          return new ProxyAsset(assetData, call);
+        });
         this.accounts = data.accounts;
         this.events.emit('accountChange', this.accounts);
+      } else if (data.response) {
+        if (resolvers[data.id]) {
+          resolvers[data.id].resolve(data.response);
+          delete resolvers[data.id];
+        }
       }
     });
   }
@@ -28,6 +47,7 @@ export default class ProxyCore {
   }
   
   getAssets(): Asset[] {
+    // @ts-ignore
     return this.assets;
   }
 

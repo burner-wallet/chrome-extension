@@ -15,7 +15,7 @@ module.exports = {
     wallet: "./src/wallet.tsx"
   },
   output: {
-    publicPath: ".",
+    publicPath: "",
     path: resolve(__dirname, "dist/"),
     filename: "[name].bundle.js",
     libraryTarget: "umd"

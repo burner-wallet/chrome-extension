@@ -2,7 +2,7 @@ import { xdai, dai, eth } from '@burner-wallet/assets';
 import BurnerCore from '@burner-wallet/core';
 import { LocalSigner } from '@burner-wallet/core/signers';
 import { InfuraGateway, XDaiGateway, } from '@burner-wallet/core/gateways';
-import { ChromeExtensionSigner } from '@burner-wallet/chrome-extension';
+import { setupBackground, ChromeExtensionSigner } from '@burner-wallet/chrome-extension';
 
 const core = new BurnerCore({
   signers: [new ChromeExtensionSigner()],
@@ -12,3 +12,5 @@ const core = new BurnerCore({
   ],
   assets: [xdai, dai, eth],
 });
+
+setupBackground({ core });

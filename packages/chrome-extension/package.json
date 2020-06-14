@@ -12,12 +12,16 @@
   "dependencies": {
     "@burner-wallet/assets": "^1.0.0",
     "extension-port-stream": "^1.0.0",
+    "json-rpc-engine": "^5.1.8",
+    "json-rpc-middleware-stream": "^2.1.1",
+    "lodash": "^4.17.15",
     "post-message-stream": "^3.0.0",
     "pump": "^3.0.0"
   },
   "devDependencies": {
     "@burner-wallet/types": "^1.0.0",
     "@types/chrome": "^0.0.114",
+    "@types/lodash": "^4.14.155",
     "@types/pump": "^1.1.0",
     "@types/react": "*"
   }

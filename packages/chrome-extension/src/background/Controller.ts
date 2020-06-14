@@ -11,11 +11,16 @@ const assetProps = ['id', 'name', 'network', 'type', 'icon', 'address'];
 export default class Controller {
   private core: BurnerCore;
   private events: EventEmitter;
+  private defaultChain: string;
 
   constructor(core: BurnerCore) {
     this.core = core;
+    // @ts-ignore
+    this.defaultChain = core.gateways[0].getNetworks()[0];
 
     this.events = new EventEmitter();
+
+    this.rpcPassthrough = this.rpcPassthrough.bind(this);
   }
 
   connectToWallet(port: PortStream) {
@@ -26,7 +31,7 @@ export default class Controller {
     const rpcStream = mux.createStream('rpc');
 
     this.setupWallet(walletStream);
-    this.setupRPC(rpcStream);
+    this.setupRPC(rpcStream, this.rpcPassthrough);
   }
 
   setupWallet(stream: Writable) {
@@ -50,17 +55,54 @@ export default class Controller {
     stream.on('end', () => console.log('wallet close'));
   }
 
-  setupRPC(stream: Writable) {
-    stream.on('data', async (data: any) => {
-      const provider = this.core.getProvider(data.chainId);
+  connectToCS(port: Writable, origin: string, tab: any) {
+    const mux = new ObjectMultiplex();
+    pump(mux, port, mux, (err) => console.error('Pipe closed', err));
 
-      provider.sendAsync(data.payload, (error: any, response: any) => {
-        if (response) {
-          response.id = data.payload.id2;
+    const rpcStream = mux.createStream('rpc');
+
+    this.setupRPC(rpcStream, async (chainId: string, payload: any) => {
+      switch (payload.method) {
+        case 'eth_requestAccounts':
+          return { id: payload.id, result: this.core.getAccounts() };
+
+        default:
+          return this.rpcPassthrough(chainId, payload);
+      }
+    });
+    port.on('end', () => console.log(`Tab ${origin} closed`));
+  }
+
+  setupRPC(stream: Writable, handler: (chainId: string, payload: any) => Promise<any>) {
+    stream.on('data', async (data: any) => {
+      const chainId = data.chainId === 'default' ? this.defaultChain : data.chainId;
+
+      const out: any = { id: data.id };
+
+      try {
+        out.response = await handler(chainId, data.payload);
+        out.response.id = data.payload.id2;
+      } catch (error) {
+        out.error = error;
+      }
+
+      console.log('out', out);
+      stream.write(out);
+    });
+  }
+
+  private rpcPassthrough(chainId: string, payload: any) {
+    const provider = this.core.getProvider(chainId);
+
+    return new Promise((resolve, reject) => {
+      provider.sendAsync(payload, (error: any, response: any) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(response);
         }
-        stream.write({ id: data.id, response, error });
       });
-    })
+    });
   }
 
   async assetCall(assetId: string, command: string, args: any[]) {

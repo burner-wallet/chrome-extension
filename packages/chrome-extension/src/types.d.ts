@@ -20,24 +20,6 @@ declare module 'extension-port-stream' {
   }
 }
 
-declare module 'json-rpc-engine' {
-  export default class RPCEngine {
-    push(middleware: any): void;
-
-    handle(payload: any, callback: (err: any, data: any) => any): void;
-  }
-}
-
-declare module 'json-rpc-engine/src/idRemapMiddleware' {
-  function createIdRemapMiddleware(): any;
-  export default createIdRemapMiddleware;
-}
-
-declare module 'json-rpc-middleware-stream' {
-  function createJsonRpcStream(): any;
-  export default createJsonRpcStream;
-}
-
 declare module 'obj-multiplex' {
   import * as stream from 'stream';
 

@@ -1,10 +1,9 @@
 import pump from 'pump';
-import RPCEngine from 'json-rpc-engine';
-import createIdRemapMiddleware from 'json-rpc-engine/src/idRemapMiddleware';
-import createJsonRpcStream from 'json-rpc-middleware-stream';
 import { Writable } from 'stream';
 
 export default class StreamProvider {
+  public chainId: string;
+
   private stream: Writable;
   private resolvers: { [id: string]: { resolve: any, reject: any, callback: any } } = {};
   private network: string;
@@ -12,6 +11,12 @@ export default class StreamProvider {
   constructor(stream: Writable, network?: string) {
     this.stream = stream;
     this.network = network || 'default';
+
+    this.chainId = isNaN(network as any) ? this.network : `0x${parseInt(this.network).toString(16)}`;
+
+    if (!network) {
+      this.rpc({ method: 'eth_chainId' }).then((response: any) => console.log({ response }));
+    }
 
     stream.on('data', (data) => {
       if (data.response && this.resolvers[data.id]) {
@@ -53,6 +58,13 @@ export default class StreamProvider {
   }
 
   private rpc(payload: any, callback?: (err: any, data: any) => void) {
+    if (!payload.jsonrpc) {
+      payload.jsonrpc = '2.0';
+    }
+    if (!payload.id) {
+      payload.id = Math.floor(Math.random() * 10000000);
+    }
+
     return new Promise((resolve, reject) => {
       const id = Math.floor(Math.random() * 10000000);
       this.resolvers[id] = { resolve, reject, callback };

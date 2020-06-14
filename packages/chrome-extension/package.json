@@ -12,8 +12,6 @@
   "dependencies": {
     "@burner-wallet/assets": "^1.0.0",
     "extension-port-stream": "^1.0.0",
-    "json-rpc-engine": "^5.1.8",
-    "json-rpc-middleware-stream": "^2.1.1",
     "lodash": "^4.17.15",
     "obj-multiplex": "^1.0.0",
     "post-message-stream": "^3.0.0",

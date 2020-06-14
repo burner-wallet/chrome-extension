@@ -3,29 +3,50 @@ import HistoryEvent, { HistoryEventProps } from '@burner-wallet/core/HistoryEven
 import { SignedTransaction } from '@burner-wallet/core/signers/Signer';
 import { EventEmitter } from 'events';
 import PortStream from 'extension-port-stream';
+import ObjectMultiplex from 'obj-multiplex';
+import pump from 'pump';
+import { Writable } from 'stream';
 import Web3 from 'web3';
+import StreamProvider from '../stream-provider/StreamProvider';
 import ProxyAsset from './ProxyAsset';
 
 export default class ProxyCore {
   private events: EventEmitter = new EventEmitter();
   private accounts: string[] = [];
   private assets: ProxyAsset[] = [];
+  private providerCache: { [network: string]: StreamProvider } = {};
+  private rpcStream: Writable;
 
   constructor() {
     const extensionPort = chrome.runtime.connect({ name: 'wallet' });
     const extensionStream = new PortStream(extensionPort);
 
+    const mux = new ObjectMultiplex();
+    pump(
+      mux,
+      extensionStream,
+      mux,
+      (err) => console.error('Pipe closed', err)
+    );
+
+    const walletStream = mux.createStream('wallet');
+    this.rpcStream = mux.createStream('rpc');
+
+    this.setupWallet(walletStream);
+  }
+
+  setupWallet(stream: Writable) {
     const resolvers: { [id: number]: { resolve: any, reject: any } } = {};
     let nextId = 0;
 
-    extensionStream.on('data', (data: any) => {
+    stream.on('data', (data: any) => {
       if (data.msg === 'initialize') {
         this.assets = data.assets.map((assetData: any) => {
           const call = (command: string, ...args: any[]) => {
             return new Promise((resolve, reject) => {
               const id = nextId++;
               resolvers[id] = { resolve, reject };
-              extensionStream.write({ id, msg: 'assetCall', asset: assetData.id, command, args });
+              stream.write({ id, msg: 'assetCall', asset: assetData.id, command, args });
             });
           };
 
@@ -72,7 +93,10 @@ export default class ProxyCore {
   }
 
   getProvider(network: string): any {
-    return null;
+    if (!this.providerCache[network]) {
+      this.providerCache[network] = new StreamProvider(this.rpcStream, network)
+    }
+    return this.providerCache[network];
   }
 
   getWeb3(network: string, options?: any): Web3 {

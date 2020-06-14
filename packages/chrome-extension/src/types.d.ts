@@ -37,3 +37,16 @@ declare module 'json-rpc-middleware-stream' {
   function createJsonRpcStream(): any;
   export default createJsonRpcStream;
 }
+
+declare module 'obj-multiplex' {
+  import * as stream from 'stream';
+
+  export default class ObjectMultiplex extends stream.Writable {
+    constructor();
+
+    write(chunk: any): boolean;
+    on(event: string, cb: (data: any) => void): this;
+
+    createStream(name: string): stream.Writable;
+  }
+}

@@ -2,6 +2,9 @@ import BurnerCore from '@burner-wallet/core';
 import { EventEmitter } from 'events';
 import PortStream from 'extension-port-stream';
 import _ from 'lodash';
+import ObjectMultiplex from 'obj-multiplex';
+import { Writable } from 'stream';
+import pump from 'pump';
 
 const assetProps = ['id', 'name', 'network', 'type', 'icon', 'address'];
 
@@ -16,7 +19,18 @@ export default class Controller {
   }
 
   connectToWallet(port: PortStream) {
-    port.write({
+    const mux = new ObjectMultiplex();
+    pump(mux, port, mux, (err) => console.error('Pipe closed', err));
+
+    const walletStream = mux.createStream('wallet');
+    const rpcStream = mux.createStream('rpc');
+
+    this.setupWallet(walletStream);
+    this.setupRPC(rpcStream);
+  }
+
+  setupWallet(stream: Writable) {
+    stream.write({
       msg: 'initialize',
       assets: this.core.getAssets().map(asset => ({
         ..._.pick(asset, assetProps),
@@ -26,14 +40,27 @@ export default class Controller {
     });
     console.log('wallet connected');
 
-    port.on('data', async (data: any) => {
+    stream.on('data', async (data: any) => {
       if (data.msg === 'assetCall') {
         const response = await this.assetCall(data.asset, data.command, data.args);
-        port.write({ id: data.id, response });
+        stream.write({ id: data.id, response });
       }
     });
 
-    port.on('end', () => console.log('wallet close'));
+    stream.on('end', () => console.log('wallet close'));
+  }
+
+  setupRPC(stream: Writable) {
+    stream.on('data', async (data: any) => {
+      const provider = this.core.getProvider(data.chainId);
+
+      provider.sendAsync(data.payload, (error: any, response: any) => {
+        if (response) {
+          response.id = data.payload.id2;
+        }
+        stream.write({ id: data.id, response, error });
+      });
+    })
   }
 
   async assetCall(assetId: string, command: string, args: any[]) {

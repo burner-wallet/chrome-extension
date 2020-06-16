@@ -30,6 +30,7 @@
     }
   ],
   "web_accessible_resources": [
-    "injected.bundle.js"
+    "injected.bundle.js",
+    "wallet.html"
   ]
 }

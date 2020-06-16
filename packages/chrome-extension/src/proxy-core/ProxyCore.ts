@@ -9,6 +9,7 @@ import { Writable } from 'stream';
 import Web3 from 'web3';
 import StreamProvider from '../stream-provider/StreamProvider';
 import ProxyAsset from './ProxyAsset';
+import singleton from './singleton';
 
 export default class ProxyCore {
   private events: EventEmitter = new EventEmitter();
@@ -16,8 +17,16 @@ export default class ProxyCore {
   private assets: ProxyAsset[] = [];
   private providerCache: { [network: string]: StreamProvider } = {};
   private rpcStream: Writable;
+  private walletStream: Writable;
+  private nextId = 0;
+  private resolvers: { [id: number]: { resolve: any, reject: any } } = {};
 
   constructor() {
+    if (singleton.core) {
+      throw new Error('Duplicate instances of ProxyCore');
+    }
+    singleton.core = this;
+
     const extensionPort = chrome.runtime.connect({ name: 'wallet' });
     const extensionStream = new PortStream(extensionPort);
 
@@ -29,38 +38,38 @@ export default class ProxyCore {
       (err) => console.error('Pipe closed', err)
     );
 
-    const walletStream = mux.createStream('wallet');
+    this.walletStream = mux.createStream('wallet');
     this.rpcStream = mux.createStream('rpc');
 
-    this.setupWallet(walletStream);
-  }
-
-  setupWallet(stream: Writable) {
-    const resolvers: { [id: number]: { resolve: any, reject: any } } = {};
-    let nextId = 0;
-
-    stream.on('data', (data: any) => {
+    this.walletStream.on('data', (data: any) => {
       if (data.msg === 'initialize') {
         this.assets = data.assets.map((assetData: any) => {
-          const call = (command: string, ...args: any[]) => {
-            return new Promise((resolve, reject) => {
-              const id = nextId++;
-              resolvers[id] = { resolve, reject };
-              stream.write({ id, msg: 'assetCall', asset: assetData.id, command, args });
-            });
-          };
+          const call = (command: string, ...args: any[]) =>
+            this.rpc('assetCall', { command, asset: assetData.id, args });
 
           return new ProxyAsset(assetData, call);
         });
         this.accounts = data.accounts;
         this.events.emit('accountChange', this.accounts);
       } else if (data.response) {
-        if (resolvers[data.id]) {
-          resolvers[data.id].resolve(data.response);
-          delete resolvers[data.id];
+        if (this.resolvers[data.id]) {
+          this.resolvers[data.id].resolve(data.response);
+          delete this.resolvers[data.id];
         }
       }
     });
+  }
+
+  rpc(msg: string, ...data: any[]) {
+    return new Promise((resolve, reject) => {
+      const id = this.nextId++;
+      this.resolvers[id] = { resolve, reject };
+      this.walletStream.write({ id, msg, data });
+    });
+  }
+
+  setSiteApproval(domain: string, isApproved: boolean) {
+    return this.rpc('setSiteApproval', domain, isApproved);
   }
 
   onAccountChange(callback: (accounts: string[]) => void) {

@@ -15,14 +15,20 @@ export default class StreamProvider {
     this.chainId = isNaN(network as any) ? this.network : `0x${parseInt(this.network).toString(16)}`;
 
     if (!network) {
-      this.rpc({ method: 'eth_chainId' }).then((response: any) => console.log({ response }));
+      this.rpc({ method: 'eth_chainId' }).then((response: any) => {
+        this.chainId = response.result;
+      });
     }
 
     stream.on('data', (data) => {
       if (data.response && this.resolvers[data.id]) {
-        this.resolvers[data.id].resolve(data.response);
+        if (data.response.error) {
+          this.resolvers[data.id].reject(data.response.error);
+        } else {
+          this.resolvers[data.id].resolve(data.response);
+        }
         if (this.resolvers[data.id].callback) {
-          this.resolvers[data.id].callback(null, data.response);
+          this.resolvers[data.id].callback(data.response.error, data.response);
         }
         delete this.resolvers[data.id];
       }

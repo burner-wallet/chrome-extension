@@ -5,20 +5,20 @@ import _ from 'lodash';
 import ObjectMultiplex from 'obj-multiplex';
 import { Writable } from 'stream';
 import pump from 'pump';
+import Domains from './Domains';
 
 const assetProps = ['id', 'name', 'network', 'type', 'icon', 'address'];
 
 export default class Controller {
   private core: BurnerCore;
-  private events: EventEmitter;
+  private events = new EventEmitter();
   private defaultChain: string;
+  private domains = new Domains();
 
   constructor(core: BurnerCore) {
     this.core = core;
     // @ts-ignore
     this.defaultChain = core.gateways[0].getNetworks()[0];
-
-    this.events = new EventEmitter();
 
     this.rpcPassthrough = this.rpcPassthrough.bind(this);
   }
@@ -46,10 +46,26 @@ export default class Controller {
     console.log('wallet connected');
 
     stream.on('data', async (data: any) => {
-      if (data.msg === 'assetCall') {
-        const response = await this.assetCall(data.asset, data.command, data.args);
-        stream.write({ id: data.id, response });
+      let response, error;
+      switch (data.msg) {
+        case 'assetCall':
+          response = await this.assetCall(data.data[0].asset, data.data[0].command, data.data[0].args);
+          break;
+
+        case 'setSiteApproval':
+          if (data.data[1]) {
+            this.domains.approveSite(data.data[0]);
+          } else {
+            this.domains.cancelApproval(data.data[0]);
+          }
+          response = true;
+          break;
+
+        default:
+          error = `Unknown msg ${data.msg}`;
+          console.warn(error);
       }
+      stream.write({ id: data.id, response, error });
     });
 
     stream.on('end', () => console.log('wallet close'));
@@ -60,10 +76,12 @@ export default class Controller {
     pump(mux, port, mux, (err) => console.error('Pipe closed', err));
 
     const rpcStream = mux.createStream('rpc');
+    const popInStream = mux.createStream('popin');
 
     this.setupRPC(rpcStream, async (chainId: string, payload: any) => {
       switch (payload.method) {
         case 'eth_requestAccounts':
+          await this.domains.checkApproval(popInStream, origin);
           return { id: payload.id, result: this.core.getAccounts() };
 
         default:
@@ -83,7 +101,8 @@ export default class Controller {
         out.response = await handler(chainId, data.payload);
         out.response.id = data.payload.id2;
       } catch (error) {
-        out.error = error;
+        console.error(error);
+        out.response = { id: data.payload.id2, jsonrpc: '2.0', error };
       }
 
       console.log('out', out);

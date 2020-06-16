@@ -1,6 +1,7 @@
 import { BurnerPluginContext, Plugin, Actions } from '@burner-wallet/types';
-import MyPage from './ui/MyPage';
-import MyElement from './ui/MyElement';
+import ApproveSitePage from './ui/ApproveSitePage';
+import HashRouter from './ui/HashRouter';
+import singleton from '../proxy-core/singleton';
 
 interface PluginActionContext {
   actions: Actions;
@@ -20,24 +21,11 @@ export default class ChromeExtensionPlugin implements Plugin {
   initializePlugin(pluginContext: BurnerPluginContext) {
     this.pluginContext = pluginContext;
 
-    pluginContext.addPage('/my-page', MyPage);
-    pluginContext.addButton('apps', 'My Plugin', '/my-page', {
-      description: 'Sample plugin page',
-    });
-    pluginContext.addElement('home-middle', MyElement);
-
-    pluginContext.onQRScanned((scannedQR: string, ctx: PluginActionContext) => {
-      if (scannedQR === 'My Plugin') {
-        ctx.actions.navigateTo('/my-page');
-        return true;
-      }
-    });
+    pluginContext.addPage('/approve-site', ApproveSitePage);
+    pluginContext.addElement('home-middle', HashRouter);
   }
 
-  async getBlockNum() {
-    const assets = this.pluginContext!.getAssets();
-    const web3 = this.pluginContext!.getWeb3(assets[0].network);
-    const blockNum = web3.eth.getBlockNumber();
-    return blockNum;
+  setSiteApproval(origin: string, isApproved: boolean) {
+    return singleton.core!.setSiteApproval(origin, isApproved);
   }
 }

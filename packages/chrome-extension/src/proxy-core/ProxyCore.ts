@@ -60,7 +60,7 @@ export default class ProxyCore {
     });
   }
 
-  rpc(msg: string, ...data: any[]) {
+  rpc(msg: string, ...data: any[]): Promise<any> {
     return new Promise((resolve, reject) => {
       const id = this.nextId++;
       this.resolvers[id] = { resolve, reject };
@@ -70,6 +70,18 @@ export default class ProxyCore {
 
   setSiteApproval(domain: string, isApproved: boolean) {
     return this.rpc('setSiteApproval', domain, isApproved);
+  }
+
+  getNetworks(): Promise<string[]> {
+    return this.rpc('getNetworks');
+  }
+
+  getDefaultNetwork(): Promise<string> {
+    return this.rpc('getDefaultNetwork');
+  }
+
+  setDefaultNetwork(defaultNetwork: string): Promise<void> {
+    return this.rpc('setDefaultNetwork', defaultNetwork);
   }
 
   onAccountChange(callback: (accounts: string[]) => void) {

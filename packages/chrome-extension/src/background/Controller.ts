@@ -45,27 +45,42 @@ export default class Controller {
     });
     console.log('wallet connected');
 
-    stream.on('data', async (data: any) => {
+    stream.on('data', async ({ id, msg, data }: any) => {
       let response, error;
-      switch (data.msg) {
+      switch (msg) {
         case 'assetCall':
-          response = await this.assetCall(data.data[0].asset, data.data[0].command, data.data[0].args);
+          response = await this.assetCall(data[0].asset, data[0].command, data[0].args);
           break;
 
         case 'setSiteApproval':
-          if (data.data[1]) {
-            this.domains.approveSite(data.data[0]);
+          if (data[1]) {
+            this.domains.approveSite(data[0]);
           } else {
-            this.domains.cancelApproval(data.data[0]);
+            this.domains.cancelApproval(data[0]);
           }
           response = true;
           break;
 
+        case 'getNetworks':
+          // @ts-ignore
+          response = _.uniq(_.flatten(this.core.gateways.map(gateway => gateway.getNetworks())));
+          break;
+
+        case 'getDefaultNetwork':
+          response = this.defaultChain;
+          break;
+
+        case 'setDefaultNetwork':
+          this.defaultChain = data[0];
+          events.emit('defaultNetworkChanged', data[0]);
+          response = true;
+          break;
+
         default:
-          error = `Unknown msg ${data.msg}`;
+          error = `Unknown msg ${msg}`;
           console.warn(error);
       }
-      stream.write({ id: data.id, response, error });
+      stream.write({ id, response, error });
     });
 
     stream.on('end', () => console.log('wallet close'));
@@ -99,10 +114,9 @@ export default class Controller {
 
       try {
         out.response = await handler(chainId, data.payload);
-        out.response.id = data.payload.id2;
       } catch (error) {
         console.error(error);
-        out.response = { id: data.payload.id2, jsonrpc: '2.0', error };
+        out.response = { id: data.payload.id, jsonrpc: '2.0', error };
       }
 
       console.log('out', out);

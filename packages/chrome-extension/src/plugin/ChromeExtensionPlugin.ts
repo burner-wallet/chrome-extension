@@ -1,6 +1,7 @@
 import { BurnerPluginContext, Plugin, Actions } from '@burner-wallet/types';
 import ApproveSitePage from './ui/ApproveSitePage';
 import HashRouter from './ui/HashRouter';
+import NetworkPicker from './ui/NetworkPicker';
 import singleton from '../proxy-core/singleton';
 
 interface PluginActionContext {
@@ -23,9 +24,22 @@ export default class ChromeExtensionPlugin implements Plugin {
 
     pluginContext.addPage('/approve-site', ApproveSitePage);
     pluginContext.addElement('home-middle', HashRouter);
+    pluginContext.addElement('home-middle', NetworkPicker);
   }
 
   setSiteApproval(origin: string, isApproved: boolean) {
     return singleton.core!.setSiteApproval(origin, isApproved);
+  }
+
+  getNetworks() {
+    return singleton.core!.getNetworks();
+  }
+
+  getDefaultNetwork() {
+    return singleton.core!.getDefaultNetwork();
+  }
+
+  setDefaultNetwork(newDefault: string) {
+    return singleton.core!.setDefaultNetwork(newDefault);
   }
 }

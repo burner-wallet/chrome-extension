@@ -25,7 +25,7 @@ export default class StreamProvider {
         if (data.response.error) {
           this.resolvers[data.id].reject(data.response.error);
         } else {
-          this.resolvers[data.id].resolve(data.response);
+          this.resolvers[data.id].resolve(data.response.result);
         }
         if (this.resolvers[data.id].callback) {
           this.resolvers[data.id].callback(data.response.error, data.response);
@@ -75,7 +75,7 @@ export default class StreamProvider {
       const id = Math.floor(Math.random() * 10000000);
       this.resolvers[id] = { resolve, reject, callback };
 
-      this.stream.write({ chainId: this.network, payload: { ...payload, id2: payload.id }, id });
+      this.stream.write({ chainId: this.network, payload: payload, id });
     });
   }
 }

@@ -10,6 +10,7 @@ export default class PopIn {
       z-index: 100000000;
       height: 360px;
       width: 300px;
+      box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
     `;
 
     const listener = (event: any) => {

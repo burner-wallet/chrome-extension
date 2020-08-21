@@ -1,7 +1,8 @@
 import pump from 'pump';
 import { Writable } from 'stream';
+import { EventEmitter } from 'events';
 
-export default class StreamProvider {
+export default class StreamProvider extends EventEmitter {
   public chainId: string;
 
   private stream: Writable;
@@ -9,6 +10,8 @@ export default class StreamProvider {
   private network: string;
 
   constructor(stream: Writable, network?: string) {
+    super();
+
     this.stream = stream;
     this.network = network || 'default';
 
@@ -31,6 +34,18 @@ export default class StreamProvider {
           this.resolvers[data.id].callback(data.response.error, data.response);
         }
         delete this.resolvers[data.id];
+      }
+
+      if (data.event) {
+        switch (data.event) {
+          case 'defaultNetworkChanged':
+            this.chainId = `0x${parseInt(data.network).toString(16)}`;
+            this.emit('chainChanged', this.chainId);
+            return;
+
+          default:
+            console.log('Unhandled event', data);
+        }
       }
     });
   }

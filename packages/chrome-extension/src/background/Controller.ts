@@ -72,7 +72,7 @@ export default class Controller {
 
         case 'setDefaultNetwork':
           this.defaultChain = data[0];
-          events.emit('defaultNetworkChanged', data[0]);
+          this.events.emit('defaultNetworkChanged', data[0]);
           response = true;
           break;
 
@@ -103,7 +103,18 @@ export default class Controller {
           return this.rpcPassthrough(chainId, payload);
       }
     });
-    port.on('end', () => console.log(`Tab ${origin} closed`));
+
+    const networkChangeListener = (newNetwork: any) => rpcStream.write({
+      event: 'defaultNetworkChanged',
+      network: newNetwork,
+    });
+    this.events.on('defaultNetworkChanged', networkChangeListener);
+
+    port.on('end', () => {
+      console.log(`Tab ${origin} closed`);
+
+      this.events.off('defaultNetworkChanged', networkChangeListener);
+    });
   }
 
   setupRPC(stream: Writable, handler: (chainId: string, payload: any) => Promise<any>) {

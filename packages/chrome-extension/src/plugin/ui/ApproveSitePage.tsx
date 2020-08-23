@@ -20,18 +20,16 @@ const Buttons = styled.div`
   align-items: flex-end;
 `;
 
-const close = () => window.parent.postMessage({ close: true }, '*');
-
 const ApproveSitePage: React.FC<PluginPageContext<{}, ChromeExtensionPlugin>> = ({ location, BurnerComponents, plugin }) => {
   const { Button } = BurnerComponents;
 
   const connect = async () => {
     await plugin.setSiteApproval(location.state.domain, true);
-    close();
+    plugin.close();
   };
   const cancel = async () => {
     await plugin.setSiteApproval(location.state.domain, false);
-    close();
+    plugin.close();
   };
 
   return (

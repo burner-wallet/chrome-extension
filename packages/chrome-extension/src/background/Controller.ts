@@ -8,6 +8,7 @@ import pump from 'pump';
 
 import { readStorage, writeStorage } from '../lib';
 import Domains from './Domains';
+import SignatureQueue from './SignatureQueue';
 
 const assetProps = ['id', 'name', 'network', 'type', 'icon', 'address'];
 
@@ -53,6 +54,22 @@ export default class Controller {
     });
     console.log('wallet connected');
 
+    const rpcMethods: { [name: string]: (...args: any[]) => any } = {
+      getPendingSignatures: (domain?: string) => {
+        return this.signatureQueue.getPendingSignatures(domain);
+      },
+
+      approveSignature: (id: number) => {
+        this.signatureQueue.approveSignature(id);
+        return true;
+      },
+
+      rejectSignature: (id: number) => {
+        this.signatureQueue.rejectSignature(id);
+        return true;
+      },
+    };
+
     stream.on('data', async ({ id, msg, data }: any) => {
       let response, error;
       switch (msg) {
@@ -86,6 +103,11 @@ export default class Controller {
           break;
 
         default:
+          if (rpcMethods[msg]) {
+            response = await rpcMethods[msg](...data);
+            break;
+          }
+
           error = `Unknown msg ${msg}`;
           console.warn(error);
       }
@@ -107,6 +129,10 @@ export default class Controller {
         case 'eth_requestAccounts':
           await this.domains.checkApproval(popInStream, origin);
           return { id: payload.id, result: this.core.getAccounts() };
+
+        case 'eth_sendTransaction':
+          await this.signatureQueue.confirmSignature(popInStream, payload.params[0], origin);
+          return this.rpcPassthrough(chainId, payload);
 
         default:
           return this.rpcPassthrough(chainId, payload);

@@ -8,8 +8,13 @@ const NetworkPicker: React.FC<PluginElementContext<ChromeExtensionPlugin>> = ({ 
   const [networks, setNetworks] = useState<string[]>([]);
 
   useEffect(() => {
-    plugin.getNetworks().then(_networks => setNetworks(_networks));
-    plugin.getDefaultNetwork().then(_default => setSelectedNetwork(_default));
+    let mounted = true;
+    plugin.getNetworks().then(_networks => mounted && setNetworks(_networks));
+    plugin.getDefaultNetwork().then(_default => mounted && setSelectedNetwork(_default));
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const changeNetwork = async (newNetwork: string) => {

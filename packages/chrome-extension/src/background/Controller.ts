@@ -5,6 +5,8 @@ import _ from 'lodash';
 import ObjectMultiplex from 'obj-multiplex';
 import { Writable } from 'stream';
 import pump from 'pump';
+
+import { readStorage, writeStorage } from '../lib';
 import Domains from './Domains';
 
 const assetProps = ['id', 'name', 'network', 'type', 'icon', 'address'];
@@ -14,11 +16,17 @@ export default class Controller {
   private events = new EventEmitter();
   private defaultChain: string;
   private domains = new Domains();
+  private signatureQueue = new SignatureQueue();
 
   constructor(core: BurnerCore) {
     this.core = core;
     // @ts-ignore
     this.defaultChain = core.gateways[0].getNetworks()[0];
+    readStorage('defaultNetwork').then((network: any) => {
+      if (network) {
+        this.defaultChain = network;
+      }
+    });
 
     this.rpcPassthrough = this.rpcPassthrough.bind(this);
   }
@@ -73,6 +81,7 @@ export default class Controller {
         case 'setDefaultNetwork':
           this.defaultChain = data[0];
           this.events.emit('defaultNetworkChanged', data[0]);
+          await writeStorage('defaultNetwork', data[0]);
           response = true;
           break;
 

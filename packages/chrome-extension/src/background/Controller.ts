@@ -19,6 +19,7 @@ export default class Controller {
   private domains = new Domains();
   private signatureQueue = new SignatureQueue();
   private overwriteMetamask = false;
+  private numWallets = 0;
 
   constructor(core: BurnerCore) {
     this.core = core;
@@ -35,6 +36,8 @@ export default class Controller {
     });
 
     this.rpcPassthrough = this.rpcPassthrough.bind(this);
+
+    setTimeout(() => this.core.stopAccountWatching(), 500);
   }
 
   connectToWallet(port: PortStream) {
@@ -58,6 +61,11 @@ export default class Controller {
       accounts: this.core.getAccounts(),
     });
     console.log('wallet connected');
+
+    this.numWallets++;
+    if (this.numWallets === 1) {
+      this.core.startAccountWatching();
+    }
 
     const rpcMethods: { [name: string]: (...args: any[]) => any } = {
       assetCall: (msg: any) => this.assetCall(msg.asset, msg.command, msg.args),
@@ -124,7 +132,14 @@ export default class Controller {
       stream.write({ id, response, error });
     });
 
-    stream.on('end', () => console.log('wallet close'));
+    stream.on('end', () => {
+      console.log('wallet close');
+
+      this.numWallets--;
+      if (this.numWallets === 0) {
+        this.core.stopAccountWatching();
+      }
+    });
   }
 
   connectToCS(port: Writable, origin: string, tab: any) {

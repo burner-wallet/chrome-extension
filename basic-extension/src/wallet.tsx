@@ -8,13 +8,16 @@ const core = new ProxyCore();
 
 const BurnerWallet = () =>
   <ModernUI
-    title="Basic Wallet"
+    title="BurnerX"
     // @ts-ignore
     core={core}
     plugins={[
       new ChromeExtensionPlugin(),
       new Exchange([new XDaiBridge(), new Uniswap('dai')]),
     ]}
+    theme={{
+      balanceStyle: 'stack',
+    }}
     router="memory"
   />
 

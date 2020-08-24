@@ -4,6 +4,7 @@ import { PendingSignature } from '../types';
 import ApproveSitePage from './ui/ApproveSitePage';
 import ConfirmTXPage from './ui/ConfirmTXPage';
 import HashRouter from './ui/HashRouter';
+import MetamaskOverwrite from './ui/MetamaskOverwrite';
 import NetworkPicker from './ui/NetworkPicker';
 
 interface PluginActionContext {
@@ -33,6 +34,7 @@ export default class ChromeExtensionPlugin implements Plugin {
     pluginContext.addPage('/confirm-tx', ConfirmTXPage);
     pluginContext.addElement('home-middle', HashRouter);
     pluginContext.addElement('home-middle', NetworkPicker);
+    pluginContext.addElement('home-middle', MetamaskOverwrite);
   }
 
   isPopIn(): boolean {
@@ -70,5 +72,13 @@ export default class ChromeExtensionPlugin implements Plugin {
 
   rejectSignature(id: number) {
     return singleton.core!.rpc('rejectSignature', id);
+  }
+
+  getMetamaskOverwrite() {
+    return singleton.core!.rpc('metamaskOverwrite');
+  }
+
+  setMetamaskOverwrite(overwrite: boolean) {
+    return singleton.core!.rpc('setMetamaskOverwrite', overwrite);
   }
 }

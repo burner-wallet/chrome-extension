@@ -14,11 +14,23 @@ export default function injected() {
   pump(mux, stream, mux, (err) => console.error('Pipe closed', err));
 
   const rpcStream = mux.createStream('rpc');
+  const settingsStream = mux.createStream('settings');
 
   const provider = new StreamProvider(rpcStream);
 
   // @ts-ignore
-  window.ethereum = provider;
+  if (window.ethereum) {
+    settingsStream.on('data', (data) => {
+      if (data.overwriteMetamask) {
+        // @ts-ignore
+        window.ethereum = provider;
+      }
+    });
+    settingsStream.write({ method: 'shouldOverwriteMetamask' });
+  } else {
+    // @ts-ignore
+    window.ethereum = provider;
+  }
 
   const popInStream = mux.createStream('popin');
   popInStream.on('data', (data) => {

@@ -18,6 +18,7 @@ export default class Controller {
   private defaultChain: string;
   private domains = new Domains();
   private signatureQueue = new SignatureQueue();
+  private overwriteMetamask = false;
 
   constructor(core: BurnerCore) {
     this.core = core;
@@ -27,6 +28,10 @@ export default class Controller {
       if (network) {
         this.defaultChain = network;
       }
+    });
+
+    readStorage('overwriteMetamask').then((overwrite: boolean) => {
+      this.overwriteMetamask = overwrite === true ? true : false;
     });
 
     this.rpcPassthrough = this.rpcPassthrough.bind(this);
@@ -55,6 +60,8 @@ export default class Controller {
     console.log('wallet connected');
 
     const rpcMethods: { [name: string]: (...args: any[]) => any } = {
+      assetCall: (msg: any) => this.assetCall(msg.asset, msg.command, msg.args),
+
       getPendingSignatures: (domain?: string) => {
         return this.signatureQueue.getPendingSignatures(domain);
       },
@@ -68,15 +75,18 @@ export default class Controller {
         this.signatureQueue.rejectSignature(id);
         return true;
       },
+
+      metamaskOverwrite: () => this.overwriteMetamask,
+
+      setMetamaskOverwrite: (overwrite: boolean) => {
+        this.overwriteMetamask = overwrite;
+        writeStorage('overwriteMetamask', overwrite);
+      },
     };
 
     stream.on('data', async ({ id, msg, data }: any) => {
       let response, error;
       switch (msg) {
-        case 'assetCall':
-          response = await this.assetCall(data[0].asset, data[0].command, data[0].args);
-          break;
-
         case 'setSiteApproval':
           if (data[1]) {
             this.domains.approveSite(data[0]);
@@ -123,6 +133,9 @@ export default class Controller {
 
     const rpcStream = mux.createStream('rpc');
     const popInStream = mux.createStream('popin');
+    const settingsStream = mux.createStream('settings');
+
+    this.setupSettingsStream(settingsStream);
 
     this.setupRPC(rpcStream, async (chainId: string, payload: any) => {
       switch (payload.method) {
@@ -181,6 +194,16 @@ export default class Controller {
           resolve(response);
         }
       });
+    });
+  }
+
+  setupSettingsStream(stream: Writable) {
+    stream.on('data', (data: any) => {
+      if (data.method === 'shouldOverwriteMetamask') {
+        stream.write({ overwriteMetamask: this.overwriteMetamask });
+      } else {
+        console.warn('Unhandled settings message', data);
+      }
     });
   }
 
